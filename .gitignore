@@ -44,3 +44,5 @@ yarn-error.log*
 
 # Generated output files
 trending_keywords.json
+job_listings.json
+job_listings.csv
