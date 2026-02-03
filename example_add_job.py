@@ -18,7 +18,7 @@ def main():
         salary="$165000-$250000 /yr",
         company_size="1001-5000",
         company_industry=["Big Data", "Machine Learning"],
-        qualifications="1. BS in Computer Science, Engineering, or related field\n2. Strong programming skills in Python, C++, or Java\n3. Experience with machine learning and quantitative analysis",
+        qualifications="1. BS in Computer Science, Engineering, or related field\n2. Strong programming skills in Python, C++, Java, and SQL\n3. Experience with machine learning frameworks: TensorFlow, PyTorch, scikit-learn\n4. Knowledge of cloud platforms: AWS, Azure, Docker, Kubernetes\n5. Experience with databases: PostgreSQL, MongoDB, Redis\n6. Familiarity with big data tools: Spark, Hadoop, Kafka\n7. Understanding of NLP, computer vision, and LLMs\n8. Experience with REST APIs, GraphQL, and microservices architecture\n9. Knowledge of CI/CD pipelines, Git, and agile methodologies",
         h1b_sponsored="not sure",
         is_new_grad=False,
         apply_url="https://example.com/apply",

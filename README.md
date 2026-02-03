@@ -10,6 +10,13 @@ A comprehensive tool for managing job applications and extracting trending keywo
 - Export to CSV for easy sharing
 - Track H1B sponsorship, work model, and new grad positions
 
+### Resume Builder 📝
+- Extracts qualifications from job listings organized by date
+- Parses and categorizes skills (Programming Languages, ML Frameworks, Databases, etc.)
+- Creates resume-friendly skill tables
+- Exports to JSON and CSV formats
+- Generates summary of most common skills across all jobs
+
 ### Keyword Analyzer 🔍
 - Scrapes job descriptions from popular job boards
 - Analyzes and extracts trending keywords
@@ -51,6 +58,28 @@ Example job fields:
 - Qualifications
 - H1B Sponsored (yes/no/not sure)
 - Is New Grad (boolean)
+
+### Resume Builder
+
+Extract and organize skills from job qualifications:
+
+```bash
+python resume_builder.py
+```
+
+Features:
+- **Extract skills**: Automatically parses qualifications from all job listings
+- **Organize by date**: Groups skills by job posting date
+- **Categorize skills**: Organizes into categories (Programming Languages, ML Frameworks, Databases, Cloud Platforms, etc.)
+- **Display table**: Shows formatted resume skills table
+- **Export formats**: Saves to JSON and CSV for easy use
+
+The resume builder will:
+1. Read all job listings from your tracker
+2. Extract qualifications from each job (organized by date)
+3. Parse and categorize technical skills
+4. Display a formatted resume table
+5. Save results to `resume_skills.json` and `resume_skills.csv`
 
 ### Keyword Analyzer
 

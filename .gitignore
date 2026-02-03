@@ -46,3 +46,9 @@ yarn-error.log*
 trending_keywords.json
 job_listings.json
 job_listings.csv
+resume_skills.json
+resume_skills.csv
+
+# Excel files (if generated)
+*.xlsx
+*.xls
