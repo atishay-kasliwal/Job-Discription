@@ -252,13 +252,24 @@ class ResumeBuilder:
                 print(f"\n{display_name}:")
                 print(f"  {', '.join(skills[:15])}")  # Show top 15
     
-    def save_resume_table(self, filename: str = "resume_skills.json"):
+    def save_resume_table(self, filename: str = None):
         """Save resume table to JSON file"""
         result = self.build_resume_table()
         
         if 'error' in result:
             print(f"\n❌ {result['error']}")
             return False
+        
+        from pathlib import Path
+        
+        # Save to outcome folder
+        outcome_dir = Path("outcome")
+        outcome_dir.mkdir(exist_ok=True)
+        
+        if filename is None:
+            filename = outcome_dir / "resume_skills.json"
+        else:
+            filename = Path(filename)
         
         try:
             with open(filename, 'w', encoding='utf-8') as f:
@@ -271,8 +282,8 @@ class ResumeBuilder:
             print(f"\n❌ Error saving resume table: {e}")
             return False
     
-    def export_resume_csv(self, filename: str = "resume_skills.csv"):
-        """Export resume skills to CSV format"""
+    def export_resume_csv(self, filename: str = None, date_wise: bool = True):
+        """Export resume skills to CSV format, optionally creating separate files per date"""
         result = self.build_resume_table()
         
         if 'error' in result:
@@ -280,37 +291,179 @@ class ResumeBuilder:
             return False
         
         import csv
+        from pathlib import Path
         
-        try:
-            with open(filename, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
+        # Create outcome folder if it doesn't exist
+        outcome_dir = Path("outcome")
+        outcome_dir.mkdir(exist_ok=True)
+        
+        if date_wise:
+            # Create separate CSV file for each date
+            exported_files = []
+            for date in sorted(result['resume_data'].keys()):
+                date_filename = outcome_dir / f"resume_skills_{date}.csv"
                 
-                # Header
-                writer.writerow(['Date', 'Category', 'Skills', 'Job Titles', 'Companies'])
-                
-                # Write data
-                for date in sorted(result['resume_data'].keys()):
-                    date_data = result['resume_data'][date]
-                    jobs_info = date_data.get('_jobs', [])
-                    job_titles = '; '.join([j['position_title'] for j in jobs_info])
-                    companies = '; '.join([j['company'] for j in jobs_info])
+                try:
+                    with open(date_filename, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        
+                        # Header
+                        writer.writerow(['Category', 'Skills', 'Job Titles', 'Companies'])
+                        
+                        date_data = result['resume_data'][date]
+                        jobs_info = date_data.get('_jobs', [])
+                        job_titles = '; '.join([j['position_title'] for j in jobs_info])
+                        companies = '; '.join([j['company'] for j in jobs_info])
+                        
+                        for category, skills in date_data.items():
+                            if category == '_jobs' or not skills:
+                                continue
+                            writer.writerow([
+                                category.replace('_', ' ').title(),
+                                ', '.join(skills),
+                                job_titles,
+                                companies
+                            ])
                     
+                    exported_files.append(str(date_filename))
+                except Exception as e:
+                    print(f"  ⚠️  Error exporting {date}: {e}")
+            
+            print(f"\n✅ Resume skills exported to {len(exported_files)} date-wise CSV files in outcome/")
+            return True
+        else:
+            # Single combined CSV file
+            if filename is None:
+                filename = outcome_dir / "resume_skills_all.csv"
+            else:
+                filename = Path(filename)
+            
+            try:
+                with open(filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    
+                    # Header
+                    writer.writerow(['Date', 'Category', 'Skills', 'Job Titles', 'Companies'])
+                    
+                    # Write data
+                    for date in sorted(result['resume_data'].keys()):
+                        date_data = result['resume_data'][date]
+                        jobs_info = date_data.get('_jobs', [])
+                        job_titles = '; '.join([j['position_title'] for j in jobs_info])
+                        companies = '; '.join([j['company'] for j in jobs_info])
+                        
+                        for category, skills in date_data.items():
+                            if category == '_jobs' or not skills:
+                                continue
+                            writer.writerow([
+                                date,
+                                category.replace('_', ' ').title(),
+                                ', '.join(skills),
+                                job_titles,
+                                companies
+                            ])
+                
+                print(f"\n✅ Resume skills exported to {filename}")
+                return True
+            except Exception as e:
+                print(f"\n❌ Error exporting to CSV: {e}")
+                return False
+    
+    def export_skill_counts_csv(self, date_wise: bool = True):
+        """Export skill counts (frequency) to CSV format, organized by date"""
+        result = self.build_resume_table()
+        
+        if 'error' in result:
+            print(f"\n❌ {result['error']}")
+            return False
+        
+        import csv
+        from pathlib import Path
+        from collections import Counter
+        
+        # Create outcome/count folder if it doesn't exist
+        count_dir = Path("outcome/count")
+        count_dir.mkdir(parents=True, exist_ok=True)
+        
+        if date_wise:
+            # Create separate CSV file for each date with skill counts
+            exported_files = []
+            for date in sorted(result['resume_data'].keys()):
+                date_filename = count_dir / f"skill_counts_{date}.csv"
+                
+                try:
+                    # Collect all skills for this date with their counts
+                    skill_counter = Counter()
+                    category_mapping = {}  # Track which category each skill belongs to
+                    
+                    date_data = result['resume_data'][date]
                     for category, skills in date_data.items():
                         if category == '_jobs' or not skills:
                             continue
-                        writer.writerow([
-                            date,
-                            category.replace('_', ' ').title(),
-                            ', '.join(skills),
-                            job_titles,
-                            companies
-                        ])
+                        for skill in skills:
+                            skill_counter[skill] += 1
+                            # Store category for each skill (if multiple, keep first or most common)
+                            if skill not in category_mapping:
+                                category_mapping[skill] = category.replace('_', ' ').title()
+                    
+                    # Write to CSV: Skill, Count, Category
+                    with open(date_filename, 'w', newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        
+                        # Header
+                        writer.writerow(['Skill', 'Count', 'Category'])
+                        
+                        # Write skills sorted by count (descending)
+                        for skill, count in skill_counter.most_common():
+                            category = category_mapping.get(skill, 'Other')
+                            writer.writerow([skill, count, category])
+                    
+                    exported_files.append(str(date_filename))
+                except Exception as e:
+                    print(f"  ⚠️  Error exporting skill counts for {date}: {e}")
             
-            print(f"\n✅ Resume skills exported to {filename}")
+            print(f"\n✅ Skill counts exported to {len(exported_files)} date-wise CSV files in outcome/count/")
             return True
-        except Exception as e:
-            print(f"\n❌ Error exporting to CSV: {e}")
-            return False
+        else:
+            # Single combined CSV file with all dates
+            combined_filename = count_dir / "skill_counts_all.csv"
+            
+            try:
+                # Collect all skills across all dates
+                skill_counter = Counter()
+                category_mapping = {}
+                date_skills = {}  # Track which dates each skill appears in
+                
+                for date in sorted(result['resume_data'].keys()):
+                    date_data = result['resume_data'][date]
+                    for category, skills in date_data.items():
+                        if category == '_jobs' or not skills:
+                            continue
+                        for skill in skills:
+                            skill_counter[skill] += 1
+                            if skill not in category_mapping:
+                                category_mapping[skill] = category.replace('_', ' ').title()
+                            if skill not in date_skills:
+                                date_skills[skill] = set()
+                            date_skills[skill].add(date)
+                
+                with open(combined_filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    
+                    # Header
+                    writer.writerow(['Skill', 'Total Count', 'Category', 'Dates'])
+                    
+                    # Write skills sorted by count
+                    for skill, count in skill_counter.most_common():
+                        category = category_mapping.get(skill, 'Other')
+                        dates_str = ', '.join(sorted(date_skills.get(skill, [])))
+                        writer.writerow([skill, count, category, dates_str])
+                
+                print(f"\n✅ Combined skill counts exported to {combined_filename}")
+                return True
+            except Exception as e:
+                print(f"\n❌ Error exporting combined skill counts: {e}")
+                return False
 
 
 def main():

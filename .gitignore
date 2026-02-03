@@ -49,6 +49,9 @@ job_listings.csv
 resume_skills.json
 resume_skills.csv
 
+# Outcome folder (contains date-wise CSV files)
+outcome/
+
 # Excel files (if generated)
 *.xlsx
 *.xls

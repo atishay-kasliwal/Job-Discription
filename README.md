@@ -23,6 +23,18 @@ A comprehensive tool for managing job applications and extracting trending keywo
 - Identifies the most relevant skills and technologies
 - Exports results to JSON for easy reference
 
+## Project Structure
+
+- `functions/`: main Python scripts and entrypoints (track jobs, analyze keywords, build resume tables)
+- `utils/`: helper modules and shared utility code (to be populated as the project grows)
+- `documents/`: non-code assets and data files
+  - `documents/sheets/`: raw daily job batches (e.g. `2026-02-03.tsv`)
+- `outcome/`: generated output files organized by date
+  - `resume_skills.json`: complete resume skills data (all dates)
+  - `resume_skills_YYYY-MM-DD.csv`: date-wise CSV files with skills extracted from each day's jobs
+  - `count/`: skill frequency counts
+    - `skill_counts_YYYY-MM-DD.csv`: date-wise CSV files showing each skill and how many times it appeared
+
 ## Setup
 
 1. Install dependencies:
