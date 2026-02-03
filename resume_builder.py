@@ -431,6 +431,10 @@ class ResumeBuilder:
                     traceback.print_exc()
             
             print(f"\n✅ Skill counts exported to {len(exported_files)} date-wise CSV files in outcome/count/")
+            
+            # Also create master sheet with combined counts
+            self.export_master_skill_counts(count_dir)
+            
             return True
         else:
             # Single combined CSV file with all dates
@@ -472,6 +476,65 @@ class ResumeBuilder:
             except Exception as e:
                 print(f"\n❌ Error exporting combined skill counts: {e}")
                 return False
+    
+    def export_master_skill_counts(self, count_dir: Path):
+        """Export master skill counts CSV combining all dates"""
+        import csv
+        from collections import Counter
+        
+        try:
+            # Get all jobs
+            all_jobs = self.tracker.get_all_jobs()
+            
+            # Count skills across all jobs
+            skill_counter = Counter()
+            category_mapping = {}
+            skill_dates = defaultdict(set)  # Track which dates each skill appears in
+            
+            # Process each job
+            for job in all_jobs:
+                skills_found = self.extract_skills_from_qualifications(job.qualifications)
+                
+                for category, skill_set in skills_found.items():
+                    for skill in skill_set:
+                        skill_counter[skill] += 1
+                        skill_dates[skill].add(job.date)
+                        if skill not in category_mapping:
+                            category_mapping[skill] = category.replace('_', ' ').title()
+            
+            # Write master CSV
+            master_filename = count_dir / "skill_counts_master.csv"
+            with open(master_filename, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                
+                # Header
+                writer.writerow(['Skill', 'Total Count', 'Category', 'Dates', 'Date Count'])
+                
+                # Write skills sorted by total count (descending)
+                for skill, total_count in skill_counter.most_common():
+                    category = category_mapping.get(skill, 'Other')
+                    dates_list = sorted(skill_dates[skill])
+                    dates_str = ', '.join(dates_list)
+                    date_count = len(dates_list)
+                    
+                    writer.writerow([
+                        skill,
+                        total_count,
+                        category,
+                        dates_str,
+                        date_count
+                    ])
+            
+            print(f"✅ Master skill counts exported to {master_filename}")
+            print(f"   - Total unique skills: {len(skill_counter)}")
+            print(f"   - Total skill mentions: {sum(skill_counter.values())}")
+            return True
+            
+        except Exception as e:
+            print(f"\n❌ Error exporting master skill counts: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
 
 def main():

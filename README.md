@@ -34,6 +34,7 @@ A comprehensive tool for managing job applications and extracting trending keywo
   - `resume_skills_YYYY-MM-DD.csv`: date-wise CSV files with skills extracted from each day's jobs
   - `count/`: skill frequency counts
     - `skill_counts_YYYY-MM-DD.csv`: date-wise CSV files showing each skill and how many times it appeared
+    - `skill_counts_master.csv`: **Master sheet** combining all dates with total counts, categories, and date ranges
 
 ## Setup
 
