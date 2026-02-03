@@ -572,6 +572,28 @@ class ResumeBuilder:
             
             tr_block = "\n".join(tr_html)
             
+            # Collect unique categories for filter
+            categories = sorted(set(row['Category'] for row in rows))
+            
+            # Prepare chart data (top 15 skills)
+            chart_data = rows[:15]
+            chart_labels = [row['Skill'] for row in chart_data]
+            chart_counts = [int(row['Total Count']) for row in chart_data]
+            
+            # Build category filter checkboxes
+            category_filters = []
+            for cat in categories:
+                category_filters.append(
+                    f'        <label style="display: inline-block; margin-right: 16px; margin-bottom: 8px;">'
+                    f'          <input type="checkbox" class="category-filter" value="{cat}" checked> {cat}'
+                    f'        </label>'
+                )
+            filter_html = "\n".join(category_filters)
+            
+            # Build chart data as JSON
+            chart_labels_json = json.dumps(chart_labels)
+            chart_counts_json = json.dumps(chart_counts)
+            
             # Build HTML template
             html_parts = [
                 "<!DOCTYPE html>",
@@ -580,6 +602,7 @@ class ResumeBuilder:
                 "  <meta charset=\"UTF-8\">",
                 "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
                 "  <title>Skill Counts Overview</title>",
+                "  <script src=\"https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js\"></script>",
                 "  <style>",
                 "    body {",
                 "      font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;",
@@ -595,6 +618,30 @@ class ResumeBuilder:
                 "      font-size: 13px;",
                 "      color: #555;",
                 "      margin: 0 0 16px 0;",
+                "    }",
+                "    .chart-container {",
+                "      background: #fff;",
+                "      padding: 20px;",
+                "      margin-bottom: 24px;",
+                "      border-radius: 8px;",
+                "      box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+                "      max-width: 960px;",
+                "    }",
+                "    .filters {",
+                "      background: #fff;",
+                "      padding: 16px;",
+                "      margin-bottom: 16px;",
+                "      border-radius: 8px;",
+                "      box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+                "      max-width: 960px;",
+                "    }",
+                "    .filters label {",
+                "      cursor: pointer;",
+                "      user-select: none;",
+                "    }",
+                "    .filters input[type=\"checkbox\"] {",
+                "      margin-right: 6px;",
+                "      cursor: pointer;",
                 "    }",
                 "    table {",
                 "      border-collapse: collapse;",
@@ -618,6 +665,9 @@ class ResumeBuilder:
                 "    tr:hover td {",
                 "      background: #f9f9f9;",
                 "    }",
+                "    tr.hidden {",
+                "      display: none;",
+                "    }",
                 "    .count {",
                 "      text-align: right;",
                 "      font-variant-numeric: tabular-nums;",
@@ -638,7 +688,16 @@ class ResumeBuilder:
                 "  <h1>Skill Counts Overview</h1>",
                 "  <p>Minimal view of aggregated skills from <code>skill_counts_master.csv</code>. Auto-updated when master CSV is regenerated.</p>",
                 "",
-                "  <table>",
+                "  <div class=\"chart-container\">",
+                "    <canvas id=\"skillsChart\"></canvas>",
+                "  </div>",
+                "",
+                "  <div class=\"filters\">",
+                "    <strong style=\"display: block; margin-bottom: 12px;\">Filter by Category:</strong>",
+                filter_html,
+                "  </div>",
+                "",
+                "  <table id=\"skillsTable\">",
                 "    <thead>",
                 "      <tr>",
                 "        <th>Skill</th>",
@@ -651,6 +710,76 @@ class ResumeBuilder:
                 tr_block,
                 "    </tbody>",
                 "  </table>",
+                "",
+                "  <script>",
+                "    // Chart data",
+                f"    const chartLabels = {chart_labels_json};",
+                f"    const chartCounts = {chart_counts_json};",
+                "",
+                "    // Initialize chart",
+                "    const ctx = document.getElementById('skillsChart').getContext('2d');",
+                "    new Chart(ctx, {",
+                "      type: 'bar',",
+                "      data: {",
+                "        labels: chartLabels,",
+                "        datasets: [{",
+                "          label: 'Total Count',",
+                "          data: chartCounts,",
+                "          backgroundColor: 'rgba(59, 130, 246, 0.6)',",
+                "          borderColor: 'rgba(59, 130, 246, 1)',",
+                "          borderWidth: 1",
+                "        }]",
+                "      },",
+                "      options: {",
+                "        responsive: true,",
+                "        maintainAspectRatio: true,",
+                "        plugins: {",
+                "          legend: {",
+                "            display: false",
+                "          },",
+                "          title: {",
+                "            display: true,",
+                "            text: 'Top 15 Skills by Total Count'",
+                "          }",
+                "        },",
+                "        scales: {",
+                "          y: {",
+                "            beginAtZero: true",
+                "          }",
+                "        }",
+                "      }",
+                "    });",
+                "",
+                "    // Category filter functionality",
+                "    const checkboxes = document.querySelectorAll('.category-filter');",
+                "    const tableRows = document.querySelectorAll('#skillsTable tbody tr');",
+                "",
+                "    function filterTable() {",
+                "      const selectedCategories = Array.from(checkboxes)",
+                "        .filter(cb => cb.checked)",
+                "        .map(cb => cb.value);",
+                "",
+                "      tableRows.forEach(row => {",
+                "        const categoryCell = row.querySelector('td:nth-child(3)');",
+                "        if (categoryCell) {",
+                "          const pill = categoryCell.querySelector('.pill');",
+                "          const category = pill ? pill.textContent.trim() : '';",
+                "          if (selectedCategories.includes(category)) {",
+                "            row.classList.remove('hidden');",
+                "          } else {",
+                "            row.classList.add('hidden');",
+                "          }",
+                "        }",
+                "      });",
+                "    }",
+                "",
+                "    checkboxes.forEach(checkbox => {",
+                "      checkbox.addEventListener('change', filterTable);",
+                "    });",
+                "",
+                "    // Initial filter",
+                "    filterTable();",
+                "  </script>",
                 "</body>",
                 "</html>"
             ]
