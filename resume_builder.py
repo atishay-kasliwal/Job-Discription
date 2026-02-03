@@ -392,19 +392,25 @@ class ResumeBuilder:
                 date_filename = count_dir / f"skill_counts_{date}.csv"
                 
                 try:
-                    # Collect all skills for this date with their counts
+                    # Get all jobs for this date
+                    jobs_for_date = [j for j in self.tracker.get_all_jobs() if j.date == date]
+                    
+                    # Count how many jobs mention each skill
                     skill_counter = Counter()
                     category_mapping = {}  # Track which category each skill belongs to
                     
-                    date_data = result['resume_data'][date]
-                    for category, skills in date_data.items():
-                        if category == '_jobs' or not skills:
-                            continue
-                        for skill in skills:
-                            skill_counter[skill] += 1
-                            # Store category for each skill (if multiple, keep first or most common)
-                            if skill not in category_mapping:
-                                category_mapping[skill] = category.replace('_', ' ').title()
+                    # Process each job's qualifications individually
+                    # Count each job instance separately (even if duplicates exist)
+                    for job in jobs_for_date:
+                        skills_found = self.extract_skills_from_qualifications(job.qualifications)
+                        
+                        # Count skills per job - each job contributes 1 to the count for each skill it has
+                        for category, skill_set in skills_found.items():
+                            for skill in skill_set:
+                                skill_counter[skill] += 1  # Increment count for each job that has this skill
+                                # Store category for each skill (keep first encountered)
+                                if skill not in category_mapping:
+                                    category_mapping[skill] = category.replace('_', ' ').title()
                     
                     # Write to CSV: Skill, Count, Category
                     with open(date_filename, 'w', newline='', encoding='utf-8') as f:
@@ -421,6 +427,8 @@ class ResumeBuilder:
                     exported_files.append(str(date_filename))
                 except Exception as e:
                     print(f"  ⚠️  Error exporting skill counts for {date}: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             print(f"\n✅ Skill counts exported to {len(exported_files)} date-wise CSV files in outcome/count/")
             return True
