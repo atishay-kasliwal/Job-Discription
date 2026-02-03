@@ -108,6 +108,36 @@ The script will:
 3. Display the top trending keywords
 4. Save results to `trending_keywords.json`
 
+## Quick Start - Processing New Job Listings
+
+When you paste a new job listings file, run the complete pipeline:
+
+```bash
+python3 run_pipeline.py <your_file.txt> [date]
+```
+
+**Example:**
+```bash
+# Process today's file (auto-detects date)
+python3 run_pipeline.py new_jobs.txt
+
+# Process file for a specific date
+python3 run_pipeline.py new_jobs.txt 2026-02-04
+```
+
+**What it does automatically:**
+1. ✅ Copies file to `documents/sheets/YYYY-MM-DD.tsv`
+2. ✅ Imports all jobs to tracker
+3. ✅ Generates resume skills tables (JSON + CSV)
+4. ✅ Generates date-wise skill count CSVs
+5. ✅ Updates master skill counts CSV
+
+**Output files:**
+- `job_listings.json` - All imported jobs
+- `outcome/resume_skills_YYYY-MM-DD.csv` - Skills for that date
+- `outcome/count/skill_counts_YYYY-MM-DD.csv` - Skill counts for that date
+- `outcome/count/skill_counts_master.csv` - Combined master sheet
+
 ## Example
 
 Add a sample job:
