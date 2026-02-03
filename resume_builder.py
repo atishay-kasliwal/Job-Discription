@@ -528,12 +528,144 @@ class ResumeBuilder:
             print(f"✅ Master skill counts exported to {master_filename}")
             print(f"   - Total unique skills: {len(skill_counter)}")
             print(f"   - Total skill mentions: {sum(skill_counter.values())}")
+            
+            # Also generate/update the HTML webpage
+            self.generate_skills_webpage(master_filename)
+            
             return True
             
         except Exception as e:
             print(f"\n❌ Error exporting master skill counts: {e}")
             import traceback
             traceback.print_exc()
+            return False
+    
+    def generate_skills_webpage(self, master_csv_path: Path):
+        """Generate minimalist HTML webpage from master CSV"""
+        import csv
+        
+        try:
+            html_path = Path("outcome/skills_master.html")
+            
+            # Read CSV data
+            rows = []
+            with open(master_csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    rows.append(row)
+            
+            # Build table rows HTML
+            tr_html = []
+            for row in rows:
+                skill = row['Skill']
+                total = row['Total Count']
+                category = row['Category']
+                date_count = row['Date Count']
+                tr_html.append(
+                    f"      <tr>\n"
+                    f"        <td>{skill}</td>\n"
+                    f"        <td class=\"count\">{total}</td>\n"
+                    f"        <td><span class=\"pill\">{category}</span></td>\n"
+                    f"        <td class=\"count\">{date_count}</td>\n"
+                    f"      </tr>"
+                )
+            
+            tr_block = "\n".join(tr_html)
+            
+            # Build HTML template
+            html_parts = [
+                "<!DOCTYPE html>",
+                "<html lang=\"en\">",
+                "<head>",
+                "  <meta charset=\"UTF-8\">",
+                "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+                "  <title>Skill Counts Overview</title>",
+                "  <style>",
+                "    body {",
+                "      font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;",
+                "      margin: 24px;",
+                "      background: #fafafa;",
+                "      color: #222;",
+                "    }",
+                "    h1 {",
+                "      font-size: 20px;",
+                "      margin-bottom: 4px;",
+                "    }",
+                "    p {",
+                "      font-size: 13px;",
+                "      color: #555;",
+                "      margin: 0 0 16px 0;",
+                "    }",
+                "    table {",
+                "      border-collapse: collapse;",
+                "      width: 100%;",
+                "      max-width: 960px;",
+                "      background: #fff;",
+                "      box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
+                "    }",
+                "    th, td {",
+                "      padding: 8px 12px;",
+                "      border-bottom: 1px solid #eee;",
+                "      text-align: left;",
+                "      font-size: 13px;",
+                "    }",
+                "    th {",
+                "      background: #f3f3f3;",
+                "      font-weight: 600;",
+                "      position: sticky;",
+                "      top: 0;",
+                "    }",
+                "    tr:hover td {",
+                "      background: #f9f9f9;",
+                "    }",
+                "    .count {",
+                "      text-align: right;",
+                "      font-variant-numeric: tabular-nums;",
+                "      font-weight: 500;",
+                "    }",
+                "    .pill {",
+                "      display: inline-block;",
+                "      padding: 3px 10px;",
+                "      border-radius: 999px;",
+                "      background: #eef2ff;",
+                "      color: #3730a3;",
+                "      font-size: 11px;",
+                "      font-weight: 500;",
+                "    }",
+                "  </style>",
+                "</head>",
+                "<body>",
+                "  <h1>Skill Counts Overview</h1>",
+                "  <p>Minimal view of aggregated skills from <code>skill_counts_master.csv</code>. Auto-updated when master CSV is regenerated.</p>",
+                "",
+                "  <table>",
+                "    <thead>",
+                "      <tr>",
+                "        <th>Skill</th>",
+                "        <th class=\"count\">Total Count</th>",
+                "        <th>Category</th>",
+                "        <th class=\"count\">Date Count</th>",
+                "      </tr>",
+                "    </thead>",
+                "    <tbody>",
+                tr_block,
+                "    </tbody>",
+                "  </table>",
+                "</body>",
+                "</html>"
+            ]
+            
+            html_content = "\n".join(html_parts)
+            
+            # Write HTML file
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            print(f"✅ Skills webpage updated: {html_path}")
+            return True
+            
+        except Exception as e:
+            print(f"  ⚠️  Error generating webpage: {e}")
             return False
 
 
