@@ -575,10 +575,16 @@ class ResumeBuilder:
             # Collect unique categories for filter
             categories = sorted(set(row['Category'] for row in rows))
             
-            # Prepare chart data (top 15 skills)
-            chart_data = rows[:15]
-            chart_labels = [row['Skill'] for row in chart_data]
-            chart_counts = [int(row['Total Count']) for row in chart_data]
+            # Prepare full skills data for JS (for dynamic chart/filter)
+            skills_js = [
+                {
+                    "skill": row["Skill"],
+                    "total": int(row["Total Count"]),
+                    "category": row["Category"],
+                    "dateCount": int(row["Date Count"]),
+                }
+                for row in rows
+            ]
             
             # Build category filter checkboxes
             category_filters = []
@@ -590,9 +596,8 @@ class ResumeBuilder:
                 )
             filter_html = "\n".join(category_filters)
             
-            # Build chart data as JSON
-            chart_labels_json = json.dumps(chart_labels)
-            chart_counts_json = json.dumps(chart_counts)
+            # Build JS data as JSON
+            skills_js_json = json.dumps(skills_js)
             
             # Build HTML template
             html_parts = [
@@ -722,19 +727,18 @@ class ResumeBuilder:
                 "  </div>",
                 "",
                 "  <script>",
-                "    // Chart data",
-                f"    const chartLabels = {chart_labels_json};",
-                f"    const chartCounts = {chart_counts_json};",
+                "    // Full skills data from backend",
+                f"    const allSkills = {skills_js_json};",
                 "",
                 "    // Initialize chart",
                 "    const ctx = document.getElementById('skillsChart').getContext('2d');",
-                "    new Chart(ctx, {",
+                "    const skillsChart = new Chart(ctx, {",
                 "      type: 'bar',",
                 "      data: {",
-                "        labels: chartLabels,",
+                "        labels: [],",
                 "        datasets: [{",
                 "          label: 'Total Count',",
-                "          data: chartCounts,",
+                "          data: [],",
                 "          backgroundColor: 'rgba(59, 130, 246, 0.6)',",
                 "          borderColor: 'rgba(59, 130, 246, 1)',",
                 "          borderWidth: 1",
@@ -749,7 +753,7 @@ class ResumeBuilder:
                 "          },",
                 "          title: {",
                 "            display: true,",
-                "            text: 'Top 15 Skills by Total Count'",
+                "            text: 'Top 15 Skills by Total Count (Filtered)'",
                 "          }",
                 "        },",
                 "        scales: {",
@@ -760,14 +764,27 @@ class ResumeBuilder:
                 "      }",
                 "    });",
                 "",
+                "    function getSelectedCategories() {",
+                "      return Array.from(document.querySelectorAll('.category-filter'))",
+                "        .filter(cb => cb.checked)",
+                "        .map(cb => cb.value);",
+                "    }",
+                "",
+                "    function updateChart() {",
+                "      const selectedCategories = getSelectedCategories();",
+                "      let filtered = allSkills.filter(s => selectedCategories.includes(s.category));",
+                "      filtered = filtered.sort((a, b) => b.total - a.total).slice(0, 15);",
+                "      skillsChart.data.labels = filtered.map(s => s.skill);",
+                "      skillsChart.data.datasets[0].data = filtered.map(s => s.total);",
+                "      skillsChart.update();",
+                "    }",
+                "",
                 "    // Category filter functionality",
                 "    const checkboxes = document.querySelectorAll('.category-filter');",
                 "    const tableRows = document.querySelectorAll('#skillsTable tbody tr');",
                 "",
                 "    function filterTable() {",
-                "      const selectedCategories = Array.from(checkboxes)",
-                "        .filter(cb => cb.checked)",
-                "        .map(cb => cb.value);",
+                "      const selectedCategories = getSelectedCategories();",
                 "",
                 "      tableRows.forEach(row => {",
                 "        const categoryCell = row.querySelector('td:nth-child(3)');",
@@ -781,13 +798,16 @@ class ResumeBuilder:
                 "          }",
                 "        }",
                 "      });",
+                "",
+                "      // Update chart to reflect same category filter",
+                "      updateChart();",
                 "    }",
                 "",
                 "    checkboxes.forEach(checkbox => {",
                 "      checkbox.addEventListener('change', filterTable);",
                 "    });",
                 "",
-                "    // Initial filter",
+                "    // Initial filter + chart",
                 "    filterTable();",
                 "  </script>",
                 "</body>",
